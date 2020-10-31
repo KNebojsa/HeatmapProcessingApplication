@@ -22,6 +22,7 @@ namespace HeatmapProcessingApplication
             Console.WriteLine($"Waiting for a clients on port {port}...");
 
             var heatmapProcessor = new HeatmapProcessor();
+            heatmapProcessor.DoProcessing();
             while (true)
             {
                 heatmapProcessor.AcceptAndServeClient(listener);

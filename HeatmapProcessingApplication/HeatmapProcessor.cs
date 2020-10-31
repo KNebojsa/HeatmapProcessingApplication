@@ -1,8 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Net.Sockets;
 using System.Text;
+using Emgu.CV;
+using Emgu.CV.CvEnum;
+using Emgu.CV.Structure;
+using OpenTK.Graphics.ES20;
 
 namespace HeatmapProcessingApp
 {
@@ -51,6 +56,30 @@ namespace HeatmapProcessingApp
             var readCount = stream.Read(buffer, 0, bufferSize);
             var recieved = Encoding.UTF8.GetString(buffer, 0, readCount);
             return recieved;
+        }
+
+        public void DoProcessing()
+        {
+            Image<Bgr, Byte> img1 = new Image<Bgr, Byte>("Heineken.jpg");// path can be absolute or relative.
+            Image<Bgr, Byte> img2 = new Image<Bgr, Byte>(img1.Size.Width, img1.Size.Height);
+
+            string[] lines = System.IO.File.ReadAllLines("Heineken.csv");
+            foreach (var line in lines)
+            {
+                var tokens = line.Split(';');
+                var column = int.Parse(tokens[1]);
+                var row = int.Parse(tokens[2]);
+                if (row >= 0 && row < img2.Height && column >= 0 && column < img2.Width)
+                {
+                    img2[row, column] = new Bgr(200, 200, 200);
+                    CvInvoke.Circle(img1, new Point(column, row), 5, new MCvScalar(1.0, 1.0, 0.3), 1,LineType.AntiAlias);
+                }
+            }
+            img1.Save("Heineken Grey.jpg");
+
+            CvInvoke.ApplyColorMap(img2, img1, ColorMapType.Bone);
+            img2.Save("AA21.png");
+
         }
     }
 }
