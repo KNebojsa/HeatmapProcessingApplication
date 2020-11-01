@@ -25,6 +25,7 @@ namespace HeatmapProcessingApp
         {
             using (var stream = client.GetStream())
             using (var writer = new StreamWriter(stream, Encoding.ASCII))
+            using (var reader = new StreamReader(stream, Encoding.UTF8))
             {
                 var request = ReadConnectingRequest(stream);
                 if (!request.Equals("Let's get connected"))
@@ -36,6 +37,13 @@ namespace HeatmapProcessingApp
 
                 writer.Write("Conncetion accepted");
                 writer.Flush();
+
+                var line = string.Empty;
+                var linecount = 0;
+                while ((line = reader.ReadLine()) != null)
+                {
+                    linecount++;
+                }
             }
             //using (var output = File.Create("views.csv"))
             //{

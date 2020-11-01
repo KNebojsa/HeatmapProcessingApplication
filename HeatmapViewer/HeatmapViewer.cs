@@ -64,7 +64,7 @@ namespace WfaClient
                             return;
                         }
 
-                        _server.
+                        _server.Client.SendFile(dialog.FileName);
                     }
                 }
             }
