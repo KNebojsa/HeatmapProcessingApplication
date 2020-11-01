@@ -4,6 +4,7 @@ using System.Drawing;
 using System.IO;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using Emgu.CV;
 using Emgu.CV.CvEnum;
 using Emgu.CV.Structure;
@@ -27,6 +28,10 @@ namespace HeatmapProcessingApp
             using (var writer = new StreamWriter(stream, Encoding.ASCII))
             using (var reader = new StreamReader(stream, Encoding.UTF8))
             {
+                while (!stream.DataAvailable)
+                {
+                    Thread.Sleep(100);
+                }
                 var request = ReadRequest(stream);
                 if (request != "Let's get connected")
                 {
@@ -38,22 +43,34 @@ namespace HeatmapProcessingApp
                 writer.Write("Conncetion accepted");
                 writer.Flush();
 
+                while (!stream.DataAvailable)
+                {
+                    Thread.Sleep(100);
+                }
                 using (var output = File.Create("Image.jpg"))
                 {
                     // read the file in chunks of 1KB
                     var buffer = new byte[1024];
                     int bytesRead;
-                    while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) > 0)
+                    while (stream.DataAvailable)
                     {
+                        bytesRead = stream.Read(buffer, 0, buffer.Length);
                         output.Write(buffer, 0, bytesRead);
                     }
+                }
+                writer.Write("Received");
+                writer.Flush();
+                while (!stream.DataAvailable)
+                {
+                    Thread.Sleep(100);
                 }
 
                 Image<Bgr, Byte> img1 = new Image<Bgr, Byte>("Image.jpg");
                 
                 var line = String.Empty;
-                while ((line = reader.ReadLine()) != null)
+                while (stream.DataAvailable)
                 {
+                    line = reader.ReadLine();
                     var tokens = line.Split(';');
                     var column = int.Parse(tokens[1]);
                     var row = int.Parse(tokens[2]);

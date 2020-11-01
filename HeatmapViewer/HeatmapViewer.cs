@@ -11,6 +11,7 @@ using System.Net.Sockets;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -56,6 +57,10 @@ namespace WfaClient
                         writer.Write("Let's get connected");
                         writer.Flush();
 
+                        while (!stream.DataAvailable)
+                        {
+                            Thread.Sleep(100);
+                        }
                         var response = ReadResponse(stream);
 
                         if (response != "Conncetion accepted")
@@ -66,6 +71,12 @@ namespace WfaClient
 
                         var fileName = @"E:\Nele\Heineken.jpg";
                         _server.Client.SendFile(fileName);
+                        while (!stream.DataAvailable)
+                        {
+                            Thread.Sleep(100);
+                        }
+                        var response2 = ReadResponse(stream);
+
                         _server.Client.SendFile(dialog.FileName);
                     }
                 }
