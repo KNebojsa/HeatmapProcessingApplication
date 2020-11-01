@@ -27,7 +27,7 @@ namespace HeatmapProcessingApp
             using (var writer = new StreamWriter(stream, Encoding.ASCII))
             using (var reader = new StreamReader(stream, Encoding.UTF8))
             {
-                var request = reader.ReadLine();
+                var request = ReadRequest(stream);
                 if (request != "Let's get connected")
                 {
                     writer.Write("Conncetion refused");
@@ -38,47 +38,43 @@ namespace HeatmapProcessingApp
                 writer.Write("Conncetion accepted");
                 writer.Flush();
 
-                var line = string.Empty;
-                var linecount = 0;
+                using (var output = File.Create("Image.jpg"))
+                {
+                    // read the file in chunks of 1KB
+                    var buffer = new byte[1024];
+                    int bytesRead;
+                    while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) > 0)
+                    {
+                        output.Write(buffer, 0, bytesRead);
+                    }
+                }
+
+                Image<Bgr, Byte> img1 = new Image<Bgr, Byte>("Image.jpg");
+                
+                var line = String.Empty;
                 while ((line = reader.ReadLine()) != null)
                 {
-                    linecount++;
+                    var tokens = line.Split(';');
+                    var column = int.Parse(tokens[1]);
+                    var row = int.Parse(tokens[2]);
+                    if (row >= 0 && row < img1.Height && column >= 0 && column < img1.Width)
+                    {
+                        CvInvoke.Circle(img1, new Point(column, row), 5, new MCvScalar(1.0, 1.0, 0.3), 1, LineType.AntiAlias);
+                    }
                 }
+
+                img1.Save("Image processed.jpg");
+
             }
-            //using (var output = File.Create("views.csv"))
-            //{
-            //    // read the file in chunks of 1KB
-            //    var buffer = new byte[1024];
-            //    int bytesRead;
-            //    while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) > 0)
-            //    {
-            //        output.Write(buffer, 0, bytesRead);
-            //    }
-            //}
         }
 
-        public void DoProcessing()
+        private string ReadRequest(NetworkStream stream)
         {
-            Image<Bgr, Byte> img1 = new Image<Bgr, Byte>("Heineken.jpg");// path can be absolute or relative.
-            Image<Bgr, Byte> img2 = new Image<Bgr, Byte>(img1.Size.Width, img1.Size.Height);
-
-            string[] lines = System.IO.File.ReadAllLines("Heineken.csv");
-            foreach (var line in lines)
-            {
-                var tokens = line.Split(';');
-                var column = int.Parse(tokens[1]);
-                var row = int.Parse(tokens[2]);
-                if (row >= 0 && row < img2.Height && column >= 0 && column < img2.Width)
-                {
-                    img2[row, column] = new Bgr(200, 200, 200);
-                    CvInvoke.Circle(img1, new Point(column, row), 5, new MCvScalar(1.0, 1.0, 0.3), 1,LineType.AntiAlias);
-                }
-            }
-            img1.Save("Heineken Grey.jpg");
-
-            CvInvoke.ApplyColorMap(img2, img1, ColorMapType.Bone);
-            img2.Save("AA21.png");
-
+            var bufferSize = 1024;
+            byte[] buffer = new byte[bufferSize];
+            var readCount = stream.Read(buffer, 0, bufferSize);
+            var recieved = Encoding.UTF8.GetString(buffer, 0, readCount);
+            return recieved;
         }
     }
 }

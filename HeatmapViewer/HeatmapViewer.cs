@@ -64,6 +64,8 @@ namespace WfaClient
                             return;
                         }
 
+                        var fileName = @"E:\Nele\Heineken.jpg";
+                        _server.Client.SendFile(fileName);
                         _server.Client.SendFile(dialog.FileName);
                     }
                 }
