@@ -27,8 +27,8 @@ namespace HeatmapProcessingApp
             using (var writer = new StreamWriter(stream, Encoding.ASCII))
             using (var reader = new StreamReader(stream, Encoding.UTF8))
             {
-                var request = ReadConnectingRequest(stream);
-                if (!request.Equals("Let's get connected"))
+                var request = reader.ReadLine();
+                if (request != "Let's get connected")
                 {
                     writer.Write("Conncetion refused");
                     writer.Flush();
@@ -55,15 +55,6 @@ namespace HeatmapProcessingApp
             //        output.Write(buffer, 0, bytesRead);
             //    }
             //}
-        }
-
-        private string ReadConnectingRequest(NetworkStream stream)
-        {
-            var bufferSize = 1024;
-            byte[] buffer = new byte[bufferSize];
-            var readCount = stream.Read(buffer, 0, bufferSize);
-            var recieved = Encoding.UTF8.GetString(buffer, 0, readCount);
-            return recieved;
         }
 
         public void DoProcessing()
