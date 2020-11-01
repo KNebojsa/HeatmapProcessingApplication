@@ -28,49 +28,16 @@ namespace HeatmapProcessingApp
             using (var writer = new StreamWriter(stream, Encoding.ASCII))
             using (var reader = new StreamReader(stream, Encoding.UTF8))
             {
-                while (!stream.DataAvailable)
-                {
-                    Thread.Sleep(100);
-                }
-                var request = ReadRequest(stream);
-                if (request != "Let's get connected")
-                {
-                    writer.Write("Conncetion refused");
-                    writer.Flush();
-                    return;
-                }
+                GetMessage(stream);
+                SendMessage(writer, "Conncetion accepted");
 
-                writer.Write("Conncetion accepted");
-                writer.Flush();
-
-                while (!stream.DataAvailable)
-                {
-                    Thread.Sleep(100);
-                }
-                using (var output = File.Create("Image.jpg"))
-                {
-                    // read the file in chunks of 1KB
-                    var buffer = new byte[1024];
-                    int bytesRead;
-                    while (stream.DataAvailable)
-                    {
-                        bytesRead = stream.Read(buffer, 0, buffer.Length);
-                        output.Write(buffer, 0, bytesRead);
-                    }
-                }
-                writer.Write("Received");
-                writer.Flush();
-                while (!stream.DataAvailable)
-                {
-                    Thread.Sleep(100);
-                }
+                ReceiveImage(stream);
+                SendMessage(writer, "Received");
 
                 Image<Bgr, Byte> img1 = new Image<Bgr, Byte>("Image.jpg");
-                
-                var line = String.Empty;
-                while (stream.DataAvailable)
+                var lines = ReceiveCsv(stream, reader);
+                foreach (var line in lines)
                 {
-                    line = reader.ReadLine();
                     var tokens = line.Split(';');
                     var column = int.Parse(tokens[1]);
                     var row = int.Parse(tokens[2]);
@@ -81,17 +48,62 @@ namespace HeatmapProcessingApp
                 }
 
                 img1.Save("Image processed.jpg");
-
             }
         }
 
-        private string ReadRequest(NetworkStream stream)
+        private static void SendMessage(StreamWriter writer, string message)
         {
+            writer.Write(message);
+            writer.Flush();
+        }
+
+        private static void ReceiveImage(NetworkStream stream)
+        {
+            while (!stream.DataAvailable)
+            {
+                Thread.Sleep(100);
+            }
+            using (var output = File.Create("Image.jpg"))
+            {
+                // read the file in chunks of 1KB
+                var buffer = new byte[1024];
+                int bytesRead;
+                while (stream.DataAvailable)
+                {
+                    bytesRead = stream.Read(buffer, 0, buffer.Length);
+                    output.Write(buffer, 0, bytesRead);
+                }
+            }
+        }
+
+        private string GetMessage(NetworkStream stream)
+        {
+            while (!stream.DataAvailable)
+            {
+                Thread.Sleep(100);
+            }
+
             var bufferSize = 1024;
             byte[] buffer = new byte[bufferSize];
             var readCount = stream.Read(buffer, 0, bufferSize);
             var recieved = Encoding.UTF8.GetString(buffer, 0, readCount);
             return recieved;
+        }
+
+        private List<string> ReceiveCsv(NetworkStream stream, StreamReader reader)
+        {
+            var lines = new List<string>();
+            while (!stream.DataAvailable)
+            {
+                Thread.Sleep(100);
+            }
+
+            while (stream.DataAvailable)
+            {
+                lines.Add(reader.ReadLine());
+            }
+
+            return lines;
         }
     }
 }
