@@ -27,26 +27,10 @@ namespace WfaClient
         public HeatmapViewer()
         {
             InitializeComponent();
-            //EstablishConnectionToServer();
         }
-
         private OpenFileDialog dialog;
-        //private TcpClient client;
-
-        //private void EstablishConnectionToServer()
-        //{
-        //    _server = new TcpClient("127.0.0.1", 9050);
-        //    using (var stream = _server.GetStream())
-        //    using (var writer = new StreamWriter(stream, Encoding.ASCII))
-        //    {
-        //        writer.Write("Let's get connected");
-        //    }
-        //}
-
-
         private void btnUploadViewsCsv_Click(object sender, EventArgs e)
         {
-         
                 dialog = new OpenFileDialog();
                 dialog.Filter = "Csv files(*.csv)|*.csv";
 
@@ -59,8 +43,6 @@ namespace WfaClient
                 labelInserted.Text = "Fail to add coordinates";
                 MessageBox.Show("An Error Occured", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
-            
-           
         }
 
         private string ReadResponse(NetworkStream stream)
@@ -123,24 +105,17 @@ namespace WfaClient
                         Thread.Sleep(100);
                     }
                     var response2 = ReadResponse(stream);
-
                     _server.Client.SendFile(dialog.FileName); //sending coordinates
 
                     ReceiveImage(stream);
                     imageLocation = "ClientSideProccessed.jpg";
-
                     pictureBox.ImageLocation = imageLocation;
-
-
                 }
-
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.ToString(), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-
-          
         }
         private static void ReceiveImage(NetworkStream stream)
         {
@@ -158,7 +133,6 @@ namespace WfaClient
                     bytesRead = stream.Read(buffer, 0, buffer.Length);
                     output.Write(buffer, 0, bytesRead);
                 }
-               
             }
         }
     }

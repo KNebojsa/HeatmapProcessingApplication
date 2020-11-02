@@ -46,7 +46,7 @@ namespace HeatmapProcessingApp
                     if (row >= 0 && row < img1.Height && column >= 0 && column < img1.Width)
                     {
                         CvInvoke.Circle(img1, new Point(column, row), 5, new MCvScalar(94.0, 206.0, 165.0), 1, LineType.AntiAlias);
-                    }//,1.0, 1.0, 0.3
+                    }
                 }
 
                 img1.Save("Image processed.jpg");
