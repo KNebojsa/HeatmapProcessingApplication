@@ -29,7 +29,9 @@ namespace HeatmapProcessingApp
             using (var reader = new StreamReader(stream, Encoding.UTF8))
             {
                 GetMessage(stream);
+                
                 SendMessage(writer, "Conncetion accepted");
+                Console.WriteLine("Conncetion accepted");
 
                 ReceiveImage(stream);
                 SendMessage(writer, "Received");
@@ -43,11 +45,13 @@ namespace HeatmapProcessingApp
                     var row = int.Parse(tokens[2]);
                     if (row >= 0 && row < img1.Height && column >= 0 && column < img1.Width)
                     {
-                        CvInvoke.Circle(img1, new Point(column, row), 5, new MCvScalar(1.0, 1.0, 0.3), 1, LineType.AntiAlias);
-                    }
+                        CvInvoke.Circle(img1, new Point(column, row), 5, new MCvScalar(94.0, 206.0, 165.0), 1, LineType.AntiAlias);
+                    }//,1.0, 1.0, 0.3
                 }
 
                 img1.Save("Image processed.jpg");
+                var fileName = "Image processed.jpg";
+                client.Client.SendFile(fileName);
             }
         }
 
