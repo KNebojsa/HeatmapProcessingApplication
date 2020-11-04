@@ -14,6 +14,9 @@ namespace HeatmapProcessingApp
 {
     public class HeatmapProcessor
     {
+        private const string ImageRecievedName = "Image received.jpg";
+        private const string ImageProcessedName = "Image processed.jpg";
+
         public void AcceptAndServeClient(TcpListener tcpListener)
         {
             using (var client = tcpListener.AcceptTcpClient())
@@ -36,22 +39,10 @@ namespace HeatmapProcessingApp
                 ReceiveImage(stream);
                 SendMessage(writer, "Received");
 
-                Image<Bgr, Byte> img1 = new Image<Bgr, Byte>("Image.jpg");
                 var lines = ReceiveCsv(stream, reader);
-                foreach (var line in lines)
-                {
-                    var tokens = line.Split(';');
-                    var column = int.Parse(tokens[1]);
-                    var row = int.Parse(tokens[2]);
-                    if (row >= 0 && row < img1.Height && column >= 0 && column < img1.Width)
-                    {
-                        CvInvoke.Circle(img1, new Point(column, row), 5, new MCvScalar(94.0, 206.0, 165.0), 1, LineType.AntiAlias);
-                    }
-                }
-
-                img1.Save("Image processed.jpg");
-                var fileName = "Image processed.jpg";
-                client.Client.SendFile(fileName);
+                ProcessImage(lines);
+                
+                client.Client.SendFile(ImageProcessedName);
             }
         }
 
@@ -67,7 +58,7 @@ namespace HeatmapProcessingApp
             {
                 Thread.Sleep(100);
             }
-            using (var output = File.Create("Image.jpg"))
+            using (var output = File.Create(ImageRecievedName))
             {
                 // read the file in chunks of 1KB
                 var buffer = new byte[1024];
@@ -108,6 +99,62 @@ namespace HeatmapProcessingApp
             }
 
             return lines;
+        }
+
+        private void ProcessImage(List<string> lines)
+        {
+            Mat imageOriginal = CvInvoke.Imread(ImageRecievedName, LoadImageType.AnyColor);
+
+            var imageWithHitsBgr = CreateHitImage(imageOriginal.Size, lines);
+            var imageWithHitsGray = new Mat();
+            CvInvoke.CvtColor(imageWithHitsBgr, imageWithHitsGray, ColorConversion.Bgr2Gray);
+
+            // create mask to have white circles wherever hits exist and to be black on all other parts
+            var mask = new Mat();
+            CvInvoke.Threshold(imageWithHitsGray, mask, 1, 255, ThresholdType.Binary);
+            var inverseMask = new Mat();
+            CvInvoke.BitwiseNot(mask, inverseMask);
+
+            // mapping level of gray to ColorMap
+            CvInvoke.ApplyColorMap(imageWithHitsBgr, imageWithHitsBgr, ColorMapType.Jet);
+            // from mapped image remove everything except hits
+            var imageWithHitsWithoutBackground = new Mat();
+            CvInvoke.BitwiseAnd(imageWithHitsBgr, imageWithHitsBgr, imageWithHitsWithoutBackground, mask);
+
+            // from original image remove only parts where hits happended 
+            var imageOriginalWithoutHits = new Mat();
+            CvInvoke.BitwiseAnd(imageOriginal, imageOriginal, imageOriginalWithoutHits, inverseMask);
+            // result is combination of original image without hits and image with hits mapped to certain ColorMap
+            var result = new Mat();
+            CvInvoke.Add(imageOriginalWithoutHits, imageWithHitsWithoutBackground, result);
+            result.Save(ImageProcessedName);
+        }
+
+        /// <summary>
+        /// creates gray image where points with hits are brighter
+        /// </summary>
+        /// <param name="size"></param>
+        /// <returns></returns>
+        private Image<Bgr, Byte> CreateHitImage(Size size, List<string> lines)
+        {
+            var imageHit = new Image<Bgr, Byte>(size);
+
+            foreach (var line in lines)
+            {
+                var tokens = line.Split(';');
+                var x = int.Parse(tokens[1]);
+                var y = int.Parse(tokens[2]);
+                if (y >= 0 && y < imageHit.Height && x >= 0 && x < imageHit.Width)
+                {
+                    var hitColor = imageHit[y, x].MCvScalar;
+                    // this is configurable
+                    int hitDelta = 50;
+                    var newHitColor = new MCvScalar(hitDelta + hitColor.V0, hitDelta + hitColor.V1, hitDelta + hitColor.V2);
+                    CvInvoke.Circle(imageHit, new Point(x, y), 25, newHitColor, -1);
+                }
+            }
+
+            return imageHit;
         }
     }
 }
