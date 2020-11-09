@@ -106,12 +106,10 @@ namespace HeatmapProcessingApp
             Mat imageOriginal = CvInvoke.Imread(ImageRecievedName, LoadImageType.AnyColor);
 
             var imageWithHitsBgr = CreateHitImage(imageOriginal.Size, lines);
-            var imageWithHitsGray = new Mat();
-            CvInvoke.CvtColor(imageWithHitsBgr, imageWithHitsGray, ColorConversion.Bgr2Gray);
 
             // create mask to have white circles wherever hits exist and to be black on all other parts
             var mask = new Mat();
-            CvInvoke.Threshold(imageWithHitsGray, mask, 1, 255, ThresholdType.Binary);
+            CvInvoke.Threshold(imageWithHitsBgr, mask, 1, 255, ThresholdType.Binary);
             var inverseMask = new Mat();
             CvInvoke.BitwiseNot(mask, inverseMask);
 
@@ -135,9 +133,9 @@ namespace HeatmapProcessingApp
         /// </summary>
         /// <param name="size"></param>
         /// <returns></returns>
-        private Image<Bgr, Byte> CreateHitImage(Size size, List<string> lines)
+        private Image<Gray, Byte> CreateHitImage(Size size, List<string> lines) 
         {
-            var imageHit = new Image<Bgr, Byte>(size);
+            var imageHit = new Image<Gray, Byte>(size);
 
             foreach (var line in lines)
             {
@@ -149,7 +147,7 @@ namespace HeatmapProcessingApp
                     var hitColor = imageHit[y, x].MCvScalar;
                     // this is configurable
                     int hitDelta = 50;
-                    var newHitColor = new MCvScalar(hitDelta + hitColor.V0, hitDelta + hitColor.V1, hitDelta + hitColor.V2);
+                    var newHitColor = new MCvScalar(hitDelta + hitColor.V0);
                     CvInvoke.Circle(imageHit, new Point(x, y), 25, newHitColor, -1);
                 }
             }
